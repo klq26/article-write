@@ -1,5 +1,11 @@
 <template>
   <div id="app">
+  <!-- 搜索框 -->
+  <h1 style='color:#FFF;font-size:0.6rem;' @click="changeRecommendWords()">热词搜索</h1>
+  <input class="search-box" type="text" v-model="searchBoxWord"/>
+  <div class="search-box-suggestion" v-show="isShowAutoComplete">
+    <p class="search-box-suggestion-item" v-for="item in autoCompleteWords" :key="item" @click="suggestItemClick(item.word)">{{item.word}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;频率：{{item.freq}}</p>
+  </div>
   <!-- 推荐热词 -->
   <h1 style='color:#FFF;font-size:0.6rem;' @click="changeRecommendWords()">词语推荐（点标题更换热词）</h1>
   <div class="recommend-words-panel">
@@ -42,10 +48,35 @@ export default {
     return {
       recommendWords: [],
       searchResults: [],
-      selectedWord: ''
+      selectedWord: '',
+      searchBoxWord: '',
+      autoCompleteWords: [],
+      isShowAutoComplete: false
+    }
+  },
+  watch: {
+    searchBoxWord: function (val, oldVal) {
+      if (val.length > 0) {
+        // console.log(val)
+        this.getAutoCompleteWords(val)
+      } else {
+        this.autoCompleteWords = []
+      }
     }
   },
   methods: {
+    getAutoCompleteWords (keyword) {
+      var that = this
+      axios.get(serverIp + 'article/api/autocomplete/' + keyword).then(function (response) {
+        // 自动补全 20 个
+        that.autoCompleteWords = response.data.data
+        if (that.autoCompleteWords.length > 0) {
+          that.isShowAutoComplete = true
+        } else {
+          that.isShowAutoComplete = false
+        }
+      })
+    },
     getRandomKeywords () {
       var that = this
       axios.get(serverIp + 'article/api/recommend_words').then(function (response) {
@@ -66,6 +97,11 @@ export default {
         // 推荐词 20 个
         that.searchResults = response.data.data
       })
+    },
+    suggestItemClick (word) {
+      this.searchBoxWord = word
+      this.selectedWord = word
+      this.getArticleByKeyword(word)
     }
   },
   created: function () {
@@ -79,6 +115,26 @@ export default {
   width: 10rem;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.search-box {
+  width: 10rem;
+  height: 48px;
+  margin: 4px;
+  color: #000;
+  background-color: #F0F0F0;
+  font-size: 0.4rem;
+}
+
+.search-box-suggestion {
+  display: float;
+}
+
+.search-box-suggestion-item {
+  color: #000;
+  background-color: #F0F0F0;
+  font-size: 0.4rem;
+  margin: 4px;
 }
 
 .recommend-words-panel {
